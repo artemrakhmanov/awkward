@@ -12,4 +12,4 @@ export const GET = endpoint("/api/human/inbox", async (req, log) => {
   Object.assign(log, { token, via: token ? "header" : "none" });
   if (!token) throw new ApiError("unauthorized", "Send Authorization: Bearer <human token>.", 401);
   return getHumanInbox(token);
-});
+}, { quietPolls: true });

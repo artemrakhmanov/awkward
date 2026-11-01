@@ -11,4 +11,4 @@ export const GET = endpoint<RouteContext<"/api/board/[slug]">>("/api/board", asy
   const board = await getBoard(ref);
   if (!board) throw new ApiError("not_found", "No board for that. Check the URL or slug.", 404);
   return board;
-});
+}, { quietPolls: true });

@@ -122,13 +122,22 @@ export async function readEventLog(limit = 100) {
 
 export type Ctx = LogFields & { status?: number };
 
-export function endpoint<C = unknown>(route: string, fn: (req: Request, log: Ctx, ctx: C) => Promise<unknown>) {
+// Browsers send Sec-Fetch-* headers; agents (curl, node, Python) don't.
+const fromBrowser = (req: Request) => req.headers.has("sec-fetch-mode");
+
+// quietPolls: the /r page and the projector board poll these every 2-3s. Their successful reads are
+// not logged (about 29k rows a day per open tab otherwise). Errors and every non-browser call still are.
+export function endpoint<C = unknown>(
+  route: string,
+  fn: (req: Request, log: Ctx, ctx: C) => Promise<unknown>,
+  opts: { quietPolls?: boolean } = {},
+) {
   return async (req: Request, ctx: C) => {
     await connection();
     const log: Ctx = {};
     try {
       const out = await fn(req, log, ctx);
-      await logEvent({ door: "http", route, req, result: "ok", ...log });
+      if (!(opts.quietPolls && fromBrowser(req))) await logEvent({ door: "http", route, req, result: "ok", ...log });
       return json(out, log.status ?? 200);
     } catch (e) {
       await logEvent({ door: "http", route, req, result: e instanceof ApiError ? e.code : "server_error", ...log });
