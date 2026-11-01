@@ -11,3 +11,5 @@ create table public.trial_log (
 );
 -- No policies: only the server (secret key) can read/write.
 alter table public.trial_log enable row level security;
+-- This project doesn't auto-grant new tables to the API roles.
+grant select, insert on table public.trial_log to service_role;
