@@ -3,6 +3,7 @@
 # A driver posts over HTTP, a rider over MCP, two "humans" accept, and every response is checked
 # for leaks. Each run uses its own board URL, so it never touches real boards.
 #   TRIAL_KEY=… scripts/api-smoke.sh [base]          (default base: prod)
+# With TRIAL_KEY it deletes its board, requests and log rows at the end. KEEP=1 keeps them.
 set -u
 B=${1:-https://awkwardboard.com}
 J='content-type: application/json'
@@ -157,6 +158,14 @@ if [[ -n "${TRIAL_KEY:-}" ]]; then
   absent "no plaintext token in the event log" "$RA|$DA|$RH|$DH|$X1|$X2|$X2N" "$log"
   absent "no contact details in the event log" 'alexdrives_smoke|\+447700900123' "$log"
   check "event log has req_ref" '"req_ref":"' "$log"
+fi
+
+# ---- Clean up after ourselves
+if [[ -n "${TRIAL_KEY:-}" && -z "${KEEP:-}" ]]; then
+  check "cleanup refuses a non-test board" '"not_test_board"' "$(get -X POST "$B/api/trial/cleanup" -H "$J" -H "authorization: Bearer $TRIAL_KEY" -d '{"url":"https://www.runfestsilverstone.com"}')"
+  check "cleanup needs the key" "404" "$(code -X POST "$B/api/trial/cleanup" -H "$J" -d "{\"url\":\"$EVENT\"}")"
+  check "cleanup deletes the test board" '"boards":1' "$(get -X POST "$B/api/trial/cleanup" -H "$J" -H "authorization: Bearer $TRIAL_KEY" -d "{\"url\":\"$EVENT\"}")"
+  check "test board is gone" "404" "$(code "$B/api/board/$(enc "$EVENT")")"
 fi
 
 echo "$pass passed, $failn failed (run $RUN)"

@@ -1,4 +1,5 @@
 import "server-only";
+import { timingSafeEqual } from "node:crypto";
 import { connection } from "next/server";
 import type { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -95,6 +96,16 @@ export async function logEvent(row: { door: Door; route: string; req?: Request; 
   } catch (e) {
     console.error("logEvent insert failed", e instanceof Error ? e.message : "unknown");
   }
+}
+
+// The trial and test routes are keyed with TRIAL_KEY, as ?key= or Authorization: Bearer.
+export function trialKeyOk(req: Request) {
+  const expected = process.env.TRIAL_KEY;
+  const given = new URL(req.url).searchParams.get("key") ?? req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? null;
+  if (!expected || !given) return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export async function readEventLog(limit = 100) {
