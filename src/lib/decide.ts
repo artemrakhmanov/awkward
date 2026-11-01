@@ -2,13 +2,11 @@ import "server-only";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { chatModel } from "@/lib/ai";
-import { searchDocuments } from "@/lib/documents";
 
 export const decisionInputSchema = z.object({
   question: z.string().min(1),
   options: z.array(z.string().min(1)).min(2),
   context: z.string().optional(),
-  useKnowledgeBase: z.boolean().default(true),
 });
 
 export const decisionSchema = z.object({
@@ -21,11 +19,8 @@ export const decisionSchema = z.object({
 export type DecisionInput = z.input<typeof decisionInputSchema>;
 export type Decision = z.infer<typeof decisionSchema>;
 
-export async function decide(input: DecisionInput) {
-  const { question, options, context, useKnowledgeBase } =
-    decisionInputSchema.parse(input);
-
-  const sources = useKnowledgeBase ? await searchDocuments(question) : [];
+export async function decide(input: DecisionInput): Promise<Decision> {
+  const { question, options, context } = decisionInputSchema.parse(input);
 
   const { output } = await generateText({
     model: chatModel,
@@ -37,12 +32,10 @@ export async function decide(input: DecisionInput) {
       `Question: ${question}`,
       `Options:\n${options.map((o) => `- ${o}`).join("\n")}`,
       context && `Context:\n${context}`,
-      sources.length > 0 &&
-        `Knowledge base:\n${sources.map((s) => `[${s.id}] ${s.content}`).join("\n\n")}`,
     ]
       .filter(Boolean)
       .join("\n\n"),
   });
 
-  return { ...output, sources: sources.map(({ id, similarity }) => ({ id, similarity })) };
+  return output;
 }
