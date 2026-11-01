@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "e2e": "tsx --conditions=react-server --env-file=.env.local scripts/e2e/run.ts",
+    "e2e:publish": "tsx --env-file=.env.local scripts/e2e/publish.ts",
     "test": "node --test --experimental-strip-types --no-warnings --conditions=react-server scripts/test/*.test.ts"
   },
   "dependencies": {
