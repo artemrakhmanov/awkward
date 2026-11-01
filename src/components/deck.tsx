@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 // The slide index lives in the URL hash (#2, #3) so a slide can be linked to.
@@ -59,7 +60,7 @@ export function Deck({ slides }: { slides: ReactNode[] }) {
 
   return (
     <main
-      className="flex h-dvh flex-col gap-8 overflow-hidden p-4 text-[22px] leading-[1.3] tracking-[-0.01em] sm:text-2xl xl:px-5"
+      className="relative flex h-dvh flex-col gap-8 overflow-hidden p-4 text-[22px] leading-[1.3] tracking-[-0.01em] sm:text-2xl xl:px-5"
       onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
       onTouchEnd={(e) => {
         const start = touch.current;
@@ -97,6 +98,22 @@ export function Deck({ slides }: { slides: ReactNode[] }) {
           {slides[index]}
         </motion.section>
       </AnimatePresence>
+
+      <nav
+        aria-label="More"
+        className="rise absolute right-4 bottom-4 flex gap-5 text-[13px] text-muted-foreground xl:right-5"
+        style={{ "--i": 6 } as CSSProperties}
+      >
+        <Link href="/docs" className="hover:text-foreground">
+          Docs
+        </Link>
+        <Link href="/evals" className="hover:text-foreground">
+          Evals
+        </Link>
+        <Link href="/architecture" className="hover:text-foreground">
+          Architecture
+        </Link>
+      </nav>
     </main>
   );
 }
