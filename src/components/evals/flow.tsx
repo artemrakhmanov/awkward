@@ -91,7 +91,7 @@ export function Flow({ run }: { run: RunFile }) {
   const box = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const [lanes, setLanes] = useState<Lane[]>([]);
-  const [pinned, setPinned] = useState(false);
+  const [pin, setPin] = useState<{ left: number; width: number; offset: number } | null>(null);
   const [open, setOpen] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -145,11 +145,37 @@ export function Flow({ run }: { run: RunFile }) {
     return () => ro.disconnect();
   }, []);
 
-  // Pin the headers once the originals have scrolled out of view.
-  const onScroll = () => {
-    const el = scroller.current;
-    if (el && lanes[0]) setPinned(el.scrollTop > lanes[0].y + lanes[0].h - 8);
-  };
+  // Pin a copy of the lane headers to the top of the viewport while the diagram is on screen and its own
+  // headers have scrolled off. The page scrolls normally; the copy follows the diagram's horizontal scroll.
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const el = box.current;
+      const sc = scroller.current;
+      const top = lanes[0];
+      if (!el || !sc || !top) return setPin(null);
+      const b = el.getBoundingClientRect();
+      const s = sc.getBoundingClientRect();
+      const headerGone = b.top + top.y + top.h < 0;
+      const stillIn = b.bottom - top.h * 2 > 0;
+      setPin(headerGone && stillIn ? { left: s.left, width: s.width, offset: b.left - s.left } : null);
+    };
+    const queue = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    const sc = scroller.current;
+    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", queue);
+    sc?.addEventListener("scroll", queue, { passive: true });
+    queue();
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", queue);
+      window.removeEventListener("resize", queue);
+      sc?.removeEventListener("scroll", queue);
+    };
+  }, [lanes]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -160,23 +186,23 @@ export function Flow({ run }: { run: RunFile }) {
       {failed ? (
         <pre className="overflow-x-auto rounded-2xl bg-secondary px-5 py-4 font-mono text-[13px]">{def}</pre>
       ) : (
-        <div ref={scroller} onScroll={onScroll} className="max-h-[80vh] overflow-auto rounded-3xl border border-border">
-          <div className="relative min-w-[56rem] px-2 pb-2">
-            {/* Sticky lane headers: a zero-height bar pinned to the top of the scroll box. */}
-            <div aria-hidden={!pinned} className={`sticky top-0 z-10 h-0 transition-opacity duration-200 ${pinned ? "opacity-100" : "pointer-events-none opacity-0"}`}>
-              <div className="absolute inset-x-0 top-0 h-16 border-b border-border bg-background/90 backdrop-blur" />
-              {lanes.map((l) => (
-                <div
-                  key={l.label + l.x}
-                  className="absolute top-3 grid h-10 place-items-center rounded-lg border border-[var(--sand-400)] bg-[var(--sand-100)] px-2 text-[13px] font-semibold whitespace-nowrap"
-                  style={{ left: l.x, width: l.w }}
-                >
-                  {l.label}
-                </div>
-              ))}
-            </div>
-            <div ref={box} className="flow min-h-40 min-w-[56rem] [&_line.flow-hot]:stroke-[#ed313e]! [&_path.flow-hot]:stroke-[#ed313e]! [&_svg]:h-auto [&_svg]:w-full [&_text.flow-hot]:fill-[#ed313e]!" aria-label="Sequence diagram of the run" />
+        <div ref={scroller} className="-mx-4 overflow-x-auto px-4 md:mx-0 md:overflow-visible md:px-0">
+          <div className="relative min-w-[56rem] md:min-w-0">
+            <div ref={box} className="flow min-h-40 [&_line.flow-hot]:stroke-[#ed313e]! [&_path.flow-hot]:stroke-[#ed313e]! [&_svg]:h-auto [&_svg]:w-full [&_text.flow-hot]:fill-[#ed313e]!" aria-label="Sequence diagram of the run" />
           </div>
+        </div>
+      )}
+      {pin && (
+        <div aria-hidden="true" className="pointer-events-none fixed top-0 z-20 h-16 overflow-hidden border-b border-border bg-background/90 backdrop-blur" style={{ left: pin.left, width: pin.width }}>
+          {lanes.map((l) => (
+            <div
+              key={l.label + l.x}
+              className="absolute top-3 grid h-10 place-items-center rounded-lg border border-[var(--sand-400)] bg-[var(--sand-100)] px-2 text-[13px] font-semibold whitespace-nowrap"
+              style={{ left: pin.offset + l.x, width: l.w }}
+            >
+              {l.label}
+            </div>
+          ))}
         </div>
       )}
       <AnimatePresence>
