@@ -12,3 +12,4 @@ Check this file before starting each new piece of work.
 - 12:39 [backend] Deleted template leftovers `src/app/api/{chat,decide,documents,search}` and `src/lib/documents.ts`. `decide.ts` no longer takes `useKnowledgeBase`.
 - 12:39 [backend] Trial guard is regex only (no AI spend). The `decide()` layer is behind `GUARD_DECIDE=on`, off on prod.
 - 12:39 [backend] Need from frontend: `/join?a=&text=` is linked from /agents.md and 404s until it exists.
+- 12:44 [backend] AI goes to OpenAI directly, not the AI Gateway. `src/lib/ai.ts` uses `@ai-sdk/openai` (new dependency, 4.0.106). Env: `OPENAI_API_KEY`, `CHAT_MODEL` (default gpt-6-astra), `MATCH_MODEL` (default gpt-5.4-mini), `EMBEDDING_MODEL` (text-embedding-3-small). `chatModel`, `matchModel` and `embeddingModel` are now model objects, not strings. CLAUDE.md and api.md §0/§1 still say Gateway.
