@@ -33,3 +33,23 @@ export const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${s % 
 export const when = (iso: string) =>
   new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/London" });
 export const doors = (actors: { door: string }[]) => [...new Set(actors.map((a) => a.door.toUpperCase()))].join(" + ");
+
+const WHO: Record<string, string> = { rider: "Rider", driver: "Driver", seller: "Seller" };
+const WHAT: Record<string, string> = {
+  inbox: "opens their link",
+  form: "fills in what to share",
+  "after-accept": "after accepting",
+  "after-decline": "after declining",
+  "no-match": "has nothing to accept",
+  final: "at the end",
+  "after-decline-final": "after the decline",
+};
+export function shotName(name: string) {
+  if (name === "driver-after-decline") return "Driver after the rider declined";
+  const board = name.match(/^board-(.+)$/);
+  if (board) return `Board after step ${board[1]}`;
+  const [who, ...rest] = name.split("-");
+  const what = rest.join("-");
+  return `${WHO[who] ?? who} ${WHAT[what] ?? what.replace(/-/g, " ")}`;
+}
+

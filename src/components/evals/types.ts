@@ -21,7 +21,7 @@ export type Evidence = { label: string; kind: string; content: string };
 export type RunEval = { id: string; name: string; status: Status; judge: string; why: string; evidence: Evidence[] };
 export type ToolCall = { kind: string; name: string; input: unknown; output: unknown; status?: string | null; error?: unknown };
 export type Turn = { actor: string; step: string; t: number; ms: number; prompt: string; reply: string; calls: ToolCall[]; attempts: number; error?: string };
-export type TimelineEvent = { i: number; t: number; from: string; to: string; kind: string; label: string; status?: string | number; source: string };
+export type TimelineEvent = { i: number; t: number; from: string; to: string; kind: string; label: string; status?: string | number; source: string; detail?: unknown };
 export type Shot = { name: string; file: string; t: number; url: string; text?: string };
 
 export type RunFile = {

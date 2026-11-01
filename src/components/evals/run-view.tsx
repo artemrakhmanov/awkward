@@ -4,10 +4,12 @@ import { AnimatePresence, motion } from "motion/react";
 import { type CSSProperties, type ReactNode, useEffect, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { StatusDot, StatusPill } from "./status";
+import { Flow } from "./flow";
+import { shotName, StatusDot, StatusPill } from "./status";
 import { type RunEval, type RunFile, runPath, type Shot, type ToolCall } from "./types";
 
 const TABS = [
+  { key: "flow", name: "Flow" },
   { key: "checks", name: "Checks" },
   { key: "conversation", name: "Conversation" },
   { key: "screens", name: "Screens" },
@@ -51,7 +53,7 @@ export function RunView({ id }: { id: string }) {
   const [run, setRun] = useState<RunFile | null>(null);
   const [failed, setFailed] = useState(false);
   const hash = useSyncExternalStore(subscribe, () => window.location.hash.slice(1), () => "");
-  const active: Tab = TABS.some((t) => t.key === hash) ? (hash as Tab) : "checks";
+  const active: Tab = TABS.some((t) => t.key === hash) ? (hash as Tab) : "flow";
   const pick = (k: Tab) => {
     window.history.replaceState(null, "", `#${k}`);
     listeners.forEach((fn) => fn());
@@ -90,6 +92,7 @@ export function RunView({ id }: { id: string }) {
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={active} {...swap} role="tabpanel">
+          {active === "flow" && <Flow run={run} />}
           {active === "checks" && <Checks run={run} />}
           {active === "conversation" && <Conversation run={run} />}
           {active === "screens" && <Screens id={id} shots={run.screenshots} />}
@@ -241,25 +244,6 @@ function unescape(s: string) {
 }
 
 // ---------------------------------------------------------------- Screens
-
-const WHO: Record<string, string> = { rider: "Rider", driver: "Driver", seller: "Seller" };
-const WHAT: Record<string, string> = {
-  inbox: "opens their link",
-  form: "fills in what to share",
-  "after-accept": "after accepting",
-  "after-decline": "after declining",
-  "no-match": "has nothing to accept",
-  final: "at the end",
-  "after-decline-final": "after the decline",
-};
-function shotName(name: string) {
-  if (name === "driver-after-decline") return "Driver after the rider declined";
-  const board = name.match(/^board-(.+)$/);
-  if (board) return `Board after step ${board[1]}`;
-  const [who, ...rest] = name.split("-");
-  const what = rest.join("-");
-  return `${WHO[who] ?? who} ${WHAT[what] ?? what.replace(/-/g, " ")}`;
-}
 
 function Screens({ id, shots }: { id: string; shots: Shot[] }) {
   if (!shots.length) return <p className="text-base text-muted-foreground">No screenshots in this run.</p>;

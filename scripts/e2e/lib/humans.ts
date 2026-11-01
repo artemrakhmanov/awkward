@@ -84,9 +84,16 @@ export class Screens {
         page.getByText("Waiting for the other side.").waitFor({ timeout: 20_000 }).then(() => "waiting" as const),
         page.getByText("You both said yes.").waitFor({ timeout: 20_000 }).then(() => "introduced" as const),
       ]).catch(() => "error" as const);
+      let state: "waiting" | "introduced" | "error" = done;
+      if (state === "error") {
+        // The page may have reloaded mid-wait (e.g. straight to introduced). Look again before calling it an error.
+        await page.reload({ waitUntil: "networkidle" });
+        const body = await page.locator("body").innerText();
+        state = body.includes("You both said yes.") ? "introduced" : body.includes("Waiting for the other side.") ? "waiting" : "error";
+      }
       await page.waitForTimeout(500);
       await this.capture(page, `${who}-after-accept`);
-      return done;
+      return state;
     } finally {
       await page.close();
     }
