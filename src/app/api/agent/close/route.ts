@@ -1,22 +1,12 @@
-import { apiError, errorResponse, json, preflight } from "@/lib/http";
+import { endpoint, preflight, unauthorized } from "@/lib/http";
 import { closeRequest } from "@/lib/requests";
 import { agentAuth } from "@/lib/tokens";
-import { tokenTag, trialLog } from "@/lib/trial";
 
 export const OPTIONS = preflight;
 
-export async function POST(req: Request) {
+export const POST = endpoint("/api/agent/close", async (req, log) => {
   const { token, via } = agentAuth(req);
-  if (!token) {
-    await trialLog({ door: "http", route: "/api/agent/close", req, auth_via: via, result: "unauthorized" });
-    return apiError("unauthorized", "Send Authorization: Bearer <agent_token>.", 401);
-  }
-  try {
-    const result = await closeRequest(token);
-    await trialLog({ door: "http", route: "/api/agent/close", req, auth_via: via, body: { _agent: tokenTag(token) }, result: "ok" });
-    return json(result);
-  } catch (e) {
-    await trialLog({ door: "http", route: "/api/agent/close", req, auth_via: via, body: { _agent: tokenTag(token) }, result: "server_error" });
-    return errorResponse(e);
-  }
-}
+  Object.assign(log, { token, via });
+  if (!token) throw unauthorized();
+  return closeRequest(token);
+});

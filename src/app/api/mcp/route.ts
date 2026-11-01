@@ -1,9 +1,9 @@
 import { createMcpHandler } from "mcp-handler";
 import { createAnchor, findAnchors } from "@/lib/anchors";
 import { getBoard } from "@/lib/board";
-import { ApiError } from "@/lib/http";
+import { ApiError, type LogFields, logEvent } from "@/lib/http";
 import { declineMatch, getAgentInbox } from "@/lib/inbox";
-import { type PostMeta, closeRequest, postRequest } from "@/lib/requests";
+import { closeRequest, type PostMeta, postRequest } from "@/lib/requests";
 import {
   agentRespondInput,
   agentTokenInput,
@@ -12,33 +12,37 @@ import {
   findAnchorsInput,
   postRequestInput,
 } from "@/lib/schemas";
-import { tokenTag, trialLog } from "@/lib/trial";
 
 // MCP server at /api/mcp: the same lib calls and JSON shapes as the REST routes (specs/api.md §7).
 // verboseLogs stays off: tool inputs contain tokens.
+export const maxDuration = 60;
 
 const ok = (x: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(x) }] });
 const fail = (msg: string) => ({ content: [{ type: "text" as const, text: msg }], isError: true });
 
 type Ctx = { http?: { req?: Request } };
 
-// Runs a tool and writes its trial_log row (tool name, args without tokens, result).
-async function run(name: string, args: Record<string, unknown>, ctx: Ctx, fn: () => Promise<unknown>, okResult = "ok") {
-  const log = (result: string) =>
-    trialLog({
-      door: "mcp",
-      route: name,
-      req: ctx.http?.req,
-      auth_via: "agent_token" in args ? "arg" : "none",
-      body: "agent_token" in args ? { ...args, _agent: tokenTag(String(args.agent_token)) } : args,
-      result,
-    });
+// Runs a tool and logs it once: tool name, args (tokens stripped), req_ref of the agent token, result.
+async function run(
+  name: string,
+  args: Record<string, unknown>,
+  ctx: Ctx,
+  fn: (log: LogFields) => Promise<unknown>,
+  okResult = "ok",
+) {
+  const log: LogFields = {
+    token: typeof args.agent_token === "string" ? args.agent_token : null,
+    via: "agent_token" in args ? "arg" : "none",
+    body: args,
+  };
+  const write = (result: string) => logEvent({ door: "mcp", route: name, req: ctx.http?.req, result, ...log });
   try {
-    const out = await fn();
-    await log(okResult);
+    const out = await fn(log);
+    await write(okResult);
     return ok(out);
   } catch (e) {
-    await log(e instanceof ApiError ? e.code : "server_error");
+    await write(e instanceof ApiError ? e.code : "server_error");
+    if (!(e instanceof ApiError)) console.error("mcp tool failed", name, e instanceof Error ? e.message : "unknown");
     return fail(e instanceof ApiError ? e.message : "Something went wrong on our side. Retry once.");
   }
 }
@@ -54,7 +58,7 @@ const handler = createMcpHandler(
       {
         title: "Find a board",
         description:
-          "Find the board for an event, place, link or thing. Pass a URL for an exact match, or words for a search. Returns up to 5 candidates with a score. If more than one could fit, ask your human which one. If none fit, use create_anchor.",
+          "Find the board for an event, place, link or thing. Boards are identified by the thing's own URL: pass the link whenever you have one for an exact match. Otherwise pass words and get up to 5 candidates with a score. If unsure, ask your human for the link. If none fit, use create_anchor.",
         inputSchema: findAnchorsInput,
         annotations: READ,
       },
@@ -66,7 +70,7 @@ const handler = createMcpHandler(
       {
         title: "Create a board",
         description:
-          "Create a board for something that doesn't have one yet. Include the URL if there is one; if a board already exists for it, you get that board back.",
+          "Create a board for something that doesn't have one yet. Always pass url if the thing has a web page; it becomes the board's identity. If a board for that URL already exists, you get it back.",
         inputSchema: createAnchorInput,
         annotations: WRITE,
       },
@@ -82,20 +86,15 @@ const handler = createMcpHandler(
         inputSchema: postRequestInput,
         annotations: WRITE,
       },
-      async (args, ctx) => {
-        const meta: PostMeta = {};
-        const started = Date.now();
-        return run(
-          "post_request",
-          args,
-          ctx,
-          async () => {
-            const result = await postRequest(args, meta);
-            Object.assign(args, { _link: meta.link, _agent: meta.agent, _ms: Date.now() - started });
-            return result;
-          },
-        );
-      },
+      async (args, ctx) =>
+        run("post_request", args, ctx, async (log) => {
+          const meta: PostMeta = {};
+          try {
+            return await postRequest(args, { source: "mcp", meta });
+          } finally {
+            log.token = meta.agentToken;
+          }
+        }),
     );
 
     server.registerTool(
@@ -103,14 +102,14 @@ const handler = createMcpHandler(
       {
         title: "Browse a board",
         description:
-          "See the anonymous posts on a board and which are matched or introduced. Accepts an id or a slug.",
+          "See the anonymous posts on a board and which are matched or introduced. Accepts the event's URL, an id or a slug.",
         inputSchema: boardInput,
         annotations: READ,
       },
       async (args, ctx) =>
         run("browse_board", args, ctx, async () => {
           const board = await getBoard(args.anchor_id);
-          if (!board) throw new ApiError("not_found", "No board with that id. Use find_anchor first.", 404);
+          if (!board) throw new ApiError("not_found", "No board for that. Use find_anchor first, or pass the event's URL.", 404);
           return board;
         }),
     );
@@ -156,8 +155,7 @@ const handler = createMcpHandler(
       "close_request",
       {
         title: "Close your request",
-        description:
-          "Close your human's request when they no longer need it. It disappears from the board.",
+        description: "Close your human's request when they no longer need it. It disappears from the board.",
         inputSchema: agentTokenInput,
         annotations: DESTRUCTIVE,
       },
@@ -165,7 +163,7 @@ const handler = createMcpHandler(
     );
   },
   {
-    serverInfo: { name: "awkward", version: "0.1.0" },
+    serverInfo: { name: "awkward", version: "1.0.0" },
     instructions:
       "Awkward is a board behind any event, place, link or thing. You post what your human needs on their behalf; we propose intros to other humans. You can check and decline; only your human can accept, on their private link, and only they choose what contact details to share. Save the agent_token you get from post_request and check in with it on later runs.",
   },
@@ -180,7 +178,7 @@ async function logged(req: Request) {
       Array.isArray(body) ? body : body ? [body] : [];
     for (const m of messages) {
       if (!m.method || m.method === "tools/call" || m.method.startsWith("notifications/")) continue;
-      await trialLog({
+      await logEvent({
         door: "mcp",
         route: m.method,
         req,
