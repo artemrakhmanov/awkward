@@ -10,11 +10,17 @@ export type CleanupResult = { boards: number; requests: number; log_rows: number
 
 // Deletes one test board (by its URL) or every test board, with their requests, matches, reveals
 // and the event-log rows of their tokens (req_ref is the first 8 hex of the token's sha256, as stored).
-export async function cleanupTestBoards({ url, all }: { url?: string; all?: boolean }): Promise<CleanupResult> {
+// By id: only a board with no URL or a test URL, created in the last 6 hours (a stray board an agent made during a run).
+export async function cleanupTestBoards({ url, all, id }: { url?: string; all?: boolean; id?: string }): Promise<CleanupResult> {
   const db = createAdminClient();
   let q = db.from("anchors").select("id");
   if (all) q = q.like("url", `${TEST_PREFIX}%`);
-  else {
+  else if (id) {
+    q = q
+      .eq("id", id)
+      .or(`url.is.null,url.like.${TEST_PREFIX}*`)
+      .gt("created_at", new Date(Date.now() - 6 * 3600_000).toISOString());
+  } else {
     const u = url ? normaliseUrl(url) : null;
     if (!u?.startsWith(TEST_PREFIX)) {
       throw new ApiError("not_test_board", `Only boards under ${TEST_PREFIX} can be cleaned up.`, 400);
