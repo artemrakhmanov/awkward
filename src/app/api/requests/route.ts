@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       door: "http",
       route: "/api/requests",
       req,
-      body: { ...(data as object), _link: meta.link, _ms: Date.now() - started },
+      body: { ...(data as object), _link: meta.link, _agent: meta.agent, _ms: Date.now() - started },
       result: meta.guardSkipped && process.env.GUARD_DECIDE === "on" ? "guard_skipped" : "ok",
     });
     return json(result);

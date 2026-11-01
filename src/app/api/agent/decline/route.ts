@@ -2,14 +2,14 @@ import { ApiError, apiError, errorResponse, json, parseInput, preflight } from "
 import { declineMatch } from "@/lib/inbox";
 import { matchIdInput } from "@/lib/schemas";
 import { agentAuth } from "@/lib/tokens";
-import { readBody, trialLog } from "@/lib/trial";
+import { readBody, tokenTag, trialLog } from "@/lib/trial";
 
 export const OPTIONS = preflight;
 
 export async function POST(req: Request) {
   const { token, via } = agentAuth(req);
   const { data, raw } = await readBody(req);
-  const body = data ?? { raw };
+  const body = { ...((data as object | undefined) ?? { raw }), _agent: tokenTag(token) };
   if (!token) {
     await trialLog({ door: "http", route: "/api/agent/decline", req, auth_via: via, body, result: "unauthorized" });
     return apiError("unauthorized", "Send Authorization: Bearer <agent_token>.", 401);

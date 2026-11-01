@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { AuthVia } from "@/lib/tokens";
+import { type AuthVia, hashToken } from "@/lib/tokens";
 
 // Trial only (specs/trial.md): every door writes one row to trial_log. Never log tokens.
 
@@ -19,6 +19,9 @@ export function stripTokens(value: unknown): unknown {
   }
   return value;
 }
+
+// Short hash of a token, so log rows can be tied together without storing the token.
+export const tokenTag = (t: string | null | undefined) => (t ? hashToken(t).slice(0, 12) : null);
 
 export async function trialLog(row: {
   door: Door;

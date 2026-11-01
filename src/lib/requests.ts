@@ -9,11 +9,11 @@ import { hashToken, newToken } from "@/lib/tokens";
 import type { PostResult } from "@/lib/types";
 import { BASE_URL } from "@/lib/url";
 
-export type PostMeta = { guardSkipped?: boolean; link?: string };
+export type PostMeta = { guardSkipped?: boolean; link?: string; agent?: string };
 
 // TRIAL STUB: the guard is real; nothing is stored and no matcher runs.
 // `meta` is filled in for the trial log: whether the guard's LLM layer was skipped,
-// and a short hash of the human token so a later visit to the link can be tied to this post.
+// and short hashes of both tokens so later link visits and inbox calls can be tied to this post.
 export async function postRequest(
   input: z.infer<typeof postRequestInput>,
   meta: PostMeta = {},
@@ -41,6 +41,7 @@ export async function postRequest(
   const humanToken = newToken();
   const agentToken = newToken();
   meta.link = hashToken(humanToken).slice(0, 12);
+  meta.agent = hashToken(agentToken).slice(0, 12);
 
   const human_link = `${BASE_URL}/api/trial/hello?t=${humanToken}`;
   const matches_found = 0;

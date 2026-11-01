@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { apiError, errorResponse, json, preflight } from "@/lib/http";
 import { getAgentInbox } from "@/lib/inbox";
 import { agentAuth } from "@/lib/tokens";
-import { trialLog } from "@/lib/trial";
+import { tokenTag, trialLog } from "@/lib/trial";
 
 export const OPTIONS = preflight;
 
@@ -15,10 +15,10 @@ export async function GET(req: Request) {
   }
   try {
     const result = await getAgentInbox(token);
-    await trialLog({ door: "http", route: "/api/agent/inbox", req, auth_via: via, result: "ok" });
+    await trialLog({ door: "http", route: "/api/agent/inbox", req, auth_via: via, body: { _agent: tokenTag(token) }, result: "ok" });
     return json(result);
   } catch (e) {
-    await trialLog({ door: "http", route: "/api/agent/inbox", req, auth_via: via, result: "server_error" });
+    await trialLog({ door: "http", route: "/api/agent/inbox", req, auth_via: via, body: { _agent: tokenTag(token) }, result: "server_error" });
     return errorResponse(e);
   }
 }

@@ -12,7 +12,7 @@ import {
   findAnchorsInput,
   postRequestInput,
 } from "@/lib/schemas";
-import { trialLog } from "@/lib/trial";
+import { tokenTag, trialLog } from "@/lib/trial";
 
 // MCP server at /api/mcp: the same lib calls and JSON shapes as the REST routes (specs/api.md §7).
 // verboseLogs stays off: tool inputs contain tokens.
@@ -30,7 +30,7 @@ async function run(name: string, args: Record<string, unknown>, ctx: Ctx, fn: ()
       route: name,
       req: ctx.http?.req,
       auth_via: "agent_token" in args ? "arg" : "none",
-      body: args,
+      body: "agent_token" in args ? { ...args, _agent: tokenTag(String(args.agent_token)) } : args,
       result,
     });
   try {
@@ -91,7 +91,7 @@ const handler = createMcpHandler(
           ctx,
           async () => {
             const result = await postRequest(args, meta);
-            Object.assign(args, { _link: meta.link, _ms: Date.now() - started });
+            Object.assign(args, { _link: meta.link, _agent: meta.agent, _ms: Date.now() - started });
             return result;
           },
         );
