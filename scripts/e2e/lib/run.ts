@@ -65,7 +65,7 @@ export class Run {
   }
 
   actor(id: string, role: string, door: Door) {
-    return (this.actors[id] = new Actor(id, role, door, this.t0));
+    return (this.actors[id] = new Actor(id, role, door, this.t0, { run_id: this.id, scenario: this.scenario.id }));
   }
 
   event(e: Omit<Event, "i" | "t"> & { t?: number }) {
@@ -329,7 +329,7 @@ function report(d: ReturnType<Run["json"]>): string {
     `| | |\n|---|---|\n| Result | ${d.summary.pass} pass, ${d.summary.fail} fail, ${d.summary.error} error, ${d.summary.skipped} skipped |` +
       `\n| Started | ${d.started_at} |\n| Finished | ${d.finished_at} |\n| Base | ${d.base_url} |\n| Git | ${d.git_sha ?? "?"} |\n| Model | ${d.model} |` +
       `\n| Board | ${d.board.url} (slug ${d.board.slug ?? "none"}) |` +
-      `\n| Actors | ${d.actors.map((a) => `${a.id} = ${a.role} via ${a.door.toUpperCase()} (${a.client})`).join("; ")} |` +
+      `\n| Actors | ${d.actors.map((a) => `${a.id} = ${a.role} via ${a.door.toUpperCase()} (${a.client}), session \`${a.session_id}\``).join("; ")} |` +
       `\n| Cleanup | ${d.cleanup ? JSON.stringify(d.cleanup) : "kept (--keep)"} |`,
     "",
   );

@@ -42,6 +42,7 @@ export class Actor {
     public role: string,
     public door: Door,
     private t0: number,
+    private tags: Record<string, string> = {},
   ) {}
 
   get client() {
@@ -54,7 +55,7 @@ export class Actor {
         ? {
             environment: { type: "openai_hosted", network: { access: "restricted", allowed_domains: [HOST] } },
             agent: { model: MODEL, instructions: INSTRUCTIONS },
-            metadata: { purpose: "awkward-e2e", actor: this.id },
+            metadata: { purpose: "awkward-e2e", actor: `${this.id} (${this.role}, ${this.door})`, ...this.tags },
           }
         : {
             environment: { type: "openai_hosted", network: { access: "disabled" } },
@@ -70,7 +71,7 @@ export class Actor {
                 },
               ],
             },
-            metadata: { purpose: "awkward-e2e", actor: this.id },
+            metadata: { purpose: "awkward-e2e", actor: `${this.id} (${this.role}, ${this.door})`, ...this.tags },
           },
     );
     this.sessionId = session.id;
@@ -128,9 +129,9 @@ export class Actor {
     return { reply, calls, error };
   }
 
-  async stop() {
-    if (this.sessionId) await client.beta.agents.sessions.delete(this.sessionId).catch(() => {});
-  }
+  // Sessions are kept (not deleted) so their traces stay in the platform console for debugging.
+  // Each one is tagged with metadata: purpose=awkward-e2e, run_id, scenario, actor.
+  async stop() {}
 }
 
 function toCall(item: Record<string, unknown>): ToolCall | null {
