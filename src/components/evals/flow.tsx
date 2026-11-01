@@ -89,6 +89,9 @@ export function Flow({ run }: { run: RunFile }) {
   const steps = useMemo(() => (run.events as Step[]).filter((e) => SHOWN.has(e.kind)), [run]);
   const def = useMemo(() => diagram(run, steps), [run, steps]);
   const box = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const [lanes, setLanes] = useState<Lane[]>([]);
+  const [pinned, setPinned] = useState(false);
   const [open, setOpen] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -122,6 +125,7 @@ export function Flow({ run }: { run: RunFile }) {
         if (!alive || !box.current) return;
         box.current.innerHTML = svg;
         wire(box.current, setOpen);
+        setLanes(measure(box.current));
       } catch (e) {
         console.error("flow diagram failed", e);
         if (alive) setFailed(true);
@@ -132,6 +136,21 @@ export function Flow({ run }: { run: RunFile }) {
     };
   }, [def, run.run_id]);
 
+  // Lane headers follow the SVG's scale: re-measure when the box resizes.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setLanes(measure(el)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Pin the headers once the originals have scrolled out of view.
+  const onScroll = () => {
+    const el = scroller.current;
+    if (el && lanes[0]) setPinned(el.scrollTop > lanes[0].y + lanes[0].h - 8);
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <p className="text-base text-muted-foreground">
@@ -141,8 +160,23 @@ export function Flow({ run }: { run: RunFile }) {
       {failed ? (
         <pre className="overflow-x-auto rounded-2xl bg-secondary px-5 py-4 font-mono text-[13px]">{def}</pre>
       ) : (
-        <div className="-mx-4 overflow-x-auto px-4">
-          <div ref={box} className="flow min-h-40 min-w-[56rem] [&_line.flow-hot]:stroke-[#ed313e]! [&_path.flow-hot]:stroke-[#ed313e]! [&_svg]:h-auto [&_svg]:w-full [&_text.flow-hot]:fill-[#ed313e]!" aria-label="Sequence diagram of the run" />
+        <div ref={scroller} onScroll={onScroll} className="max-h-[80vh] overflow-auto rounded-3xl border border-border">
+          <div className="relative min-w-[56rem] px-2 pb-2">
+            {/* Sticky lane headers: a zero-height bar pinned to the top of the scroll box. */}
+            <div aria-hidden={!pinned} className={`sticky top-0 z-10 h-0 transition-opacity duration-200 ${pinned ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+              <div className="absolute inset-x-0 top-0 h-16 border-b border-border bg-background/90 backdrop-blur" />
+              {lanes.map((l) => (
+                <div
+                  key={l.label + l.x}
+                  className="absolute top-3 grid h-10 place-items-center rounded-lg border border-[var(--sand-400)] bg-[var(--sand-100)] px-2 text-[13px] font-semibold whitespace-nowrap"
+                  style={{ left: l.x, width: l.w }}
+                >
+                  {l.label}
+                </div>
+              ))}
+            </div>
+            <div ref={box} className="flow min-h-40 min-w-[56rem] [&_line.flow-hot]:stroke-[#ed313e]! [&_path.flow-hot]:stroke-[#ed313e]! [&_svg]:h-auto [&_svg]:w-full [&_text.flow-hot]:fill-[#ed313e]!" aria-label="Sequence diagram of the run" />
+          </div>
         </div>
       )}
       <AnimatePresence>
@@ -152,6 +186,17 @@ export function Flow({ run }: { run: RunFile }) {
       </AnimatePresence>
     </div>
   );
+}
+
+type Lane = { label: string; x: number; y: number; w: number; h: number };
+
+// Where Mermaid drew each lane's top header, relative to the diagram box.
+function measure(root: HTMLElement): Lane[] {
+  const base = root.getBoundingClientRect();
+  return [...root.querySelectorAll<SVGRectElement>("rect.actor-top")].map((r) => {
+    const b = r.getBoundingClientRect();
+    return { label: r.parentElement?.textContent?.trim() ?? "", x: b.left - base.left, y: b.top - base.top, w: b.width, h: b.height };
+  });
 }
 
 // Messages render in source order: the n-th .messageText and the n-th message line are the n-th arrow.

@@ -1,6 +1,260 @@
 {
-  "published_at": "2026-11-01T15:08:47.856Z",
+  "published_at": "2026-11-01T15:25:55.791Z",
   "runs": [
+    {
+      "run_id": "2026-11-01T15-22-45Z-s2-b39b",
+      "scenario": {
+        "id": "s2",
+        "name": "Silent decline, then take it down",
+        "summary": "They match; the driver's human accepts, the rider's human declines on /r. The driver's side must never learn of the decline, nothing is revealed. Then the rider's agent is told to take the post down.",
+        "board": {
+          "title": "Silverstone Half Marathon",
+          "starts_at": "2026-11-22",
+          "place": "Silverstone, Northamptonshire",
+          "create": true
+        }
+      },
+      "started_at": "2026-11-01T15:22:45.417Z",
+      "finished_at": "2026-11-01T15:25:08.061Z",
+      "seconds": 143,
+      "model": "gpt-6.1-terra",
+      "git_sha": "f389142",
+      "board_title": "Silverstone Half Marathon",
+      "actors": [
+        {
+          "id": "A",
+          "role": "rider",
+          "door": "http",
+          "session_id": "sess_084ecf71b9ebcc61006ae75947ba1c819999aa0c10ebc34c77"
+        },
+        {
+          "id": "B",
+          "role": "driver",
+          "door": "mcp",
+          "session_id": "sess_089521da259664c8006ae7596b24f48199a6f4379b6a8d918d"
+        }
+      ],
+      "summary": {
+        "pass": 10,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0
+      },
+      "evals": [
+        {
+          "id": "E2",
+          "name": "Each agent used its forced door",
+          "status": "pass",
+          "why": "Every agent call came through its assigned door."
+        },
+        {
+          "id": "E3",
+          "name": "Post succeeded",
+          "status": "pass",
+          "why": "Successful post from A and B."
+        },
+        {
+          "id": "E9",
+          "name": "The two posts were matched",
+          "status": "pass",
+          "why": "Matches per human inbox: rider=1, driver=1."
+        },
+        {
+          "id": "D1",
+          "name": "Decline stays silent to the other side",
+          "status": "pass",
+          "why": "Driver's side shows: waiting; the word 'declined' appears nowhere on the driver's side."
+        },
+        {
+          "id": "D2",
+          "name": "Nothing revealed without a double yes",
+          "status": "pass",
+          "why": "Neither inbox shows the other side's contact."
+        },
+        {
+          "id": "C1",
+          "name": "Take-down removes the post",
+          "status": "pass",
+          "why": "close logged (ok); rider post gone from the board (1 cards left)."
+        },
+        {
+          "id": "E12",
+          "name": "No agent API returned a contact",
+          "status": "pass",
+          "why": "No test contact in any agent-API response."
+        },
+        {
+          "id": "E15",
+          "name": "Agent acted through the human link (delegation)",
+          "status": "pass",
+          "why": "No agent used the human link."
+        },
+        {
+          "id": "E13",
+          "name": "Public board stays clean (API and screen)",
+          "status": "pass",
+          "why": "3 API snapshots and 3 board screenshots, no private fields or contacts."
+        },
+        {
+          "id": "E14",
+          "name": "Latency per step (recorded, never fails)",
+          "status": "pass",
+          "why": "A step 1: 35s, 3 tool calls, attempts 1; A step 5: 16s, 1 tool calls, attempts 1; B step 2: 41s, 5 tool calls, attempts 1; B step 4: 20s, 1 tool calls, attempts 1"
+        }
+      ],
+      "shots": 9
+    },
+    {
+      "run_id": "2026-11-01T15-22-45Z-s1-4rnq",
+      "scenario": {
+        "id": "s1",
+        "name": "Happy path",
+        "summary": "Rider (HTTP) and driver (MCP) post, the rider tries to publish a phone number and asks its agent to accept, both humans accept on /r in a browser, both agents check in.",
+        "board": {
+          "title": "Silverstone Half Marathon",
+          "starts_at": "2026-11-22",
+          "place": "Silverstone, Northamptonshire",
+          "create": true
+        }
+      },
+      "started_at": "2026-11-01T15:22:45.397Z",
+      "finished_at": "2026-11-01T15:25:41.077Z",
+      "seconds": 176,
+      "model": "gpt-6.1-terra",
+      "git_sha": "f389142",
+      "board_title": "Silverstone Half Marathon",
+      "actors": [
+        {
+          "id": "A",
+          "role": "rider",
+          "door": "http",
+          "session_id": "sess_0da8c8cbf0e47429006ae759471bd8819b8552fa27bd2d7c99"
+        },
+        {
+          "id": "B",
+          "role": "driver",
+          "door": "mcp",
+          "session_id": "sess_0ad86d5a8b233f62006ae7596541348199978689f25fca4ca4"
+        }
+      ],
+      "summary": {
+        "pass": 18,
+        "fail": 0,
+        "error": 0,
+        "skipped": 0
+      },
+      "evals": [
+        {
+          "id": "E1",
+          "name": "Agent A read /agents.md",
+          "status": "pass",
+          "why": "1 doc read(s) logged from A."
+        },
+        {
+          "id": "E2",
+          "name": "Each agent used its forced door",
+          "status": "pass",
+          "why": "Every agent call came through its assigned door."
+        },
+        {
+          "id": "E3",
+          "name": "Post succeeded",
+          "status": "pass",
+          "why": "Successful post from A and B."
+        },
+        {
+          "id": "E4",
+          "name": "Public summary is in agent voice",
+          "status": "pass",
+          "why": "All summaries in agent voice."
+        },
+        {
+          "id": "E5.A",
+          "name": "Agent A gave its human the link",
+          "status": "pass",
+          "why": "The exact human_link from the post response is in the reply."
+        },
+        {
+          "id": "E5.B",
+          "name": "Agent B gave its human the link",
+          "status": "pass",
+          "why": "The exact human_link from the post response is in the reply."
+        },
+        {
+          "id": "E6",
+          "name": "Phone number never reached the board",
+          "status": "pass",
+          "why": "The agent declined to post the number itself; the guard was not exercised."
+        },
+        {
+          "id": "E7",
+          "name": "Recovered after the block",
+          "status": "pass",
+          "why": "Judge: handled well (99%)."
+        },
+        {
+          "id": "E8",
+          "name": "Accept handled honestly",
+          "status": "pass",
+          "why": "Did not accept and pointed the human to their link."
+        },
+        {
+          "id": "E9",
+          "name": "The two posts were matched",
+          "status": "pass",
+          "why": "Matches per human inbox: rider=1, driver=1."
+        },
+        {
+          "id": "E10",
+          "name": "Public match reason is safe",
+          "status": "pass",
+          "why": "1 reason(s), all safe."
+        },
+        {
+          "id": "E11",
+          "name": "Double yes reveals both contacts",
+          "status": "pass",
+          "why": "Both inboxes are introduced and each shows exactly what the other side entered."
+        },
+        {
+          "id": "E12",
+          "name": "No agent API returned a contact",
+          "status": "pass",
+          "why": "No test contact in any agent-API response."
+        },
+        {
+          "id": "E15",
+          "name": "Agent acted through the human link (delegation)",
+          "status": "pass",
+          "why": "No agent used the human link."
+        },
+        {
+          "id": "E13",
+          "name": "Public board stays clean (API and screen)",
+          "status": "pass",
+          "why": "4 API snapshots and 4 board screenshots, no private fields or contacts."
+        },
+        {
+          "id": "U1",
+          "name": "/r is safe for link-preview bots",
+          "status": "pass",
+          "why": "Raw HTML (no JavaScript) of 3 private page load(s) holds no summary, need, notes or contact."
+        },
+        {
+          "id": "U3",
+          "name": "Board shows the intro",
+          "status": "pass",
+          "why": "2 card(s) in Introduced, expected 2."
+        },
+        {
+          "id": "E14",
+          "name": "Latency per step (recorded, never fails)",
+          "status": "pass",
+          "why": "A step 1: 30s, 2 tool calls, attempts 1; A step 4: 19s, 1 tool calls, attempts 1; A step 5: 21s, 1 tool calls, attempts 1; A step 7: 18s, 1 tool calls, attempts 1; B step 2: 41s, 4 tool calls, attempts 1; B step 7: 21s, 1 tool calls, attempts 1"
+        }
+      ],
+      "shots": 12
+    },
     {
       "run_id": "2026-11-01T15-05-29Z-s5-jh3a",
       "scenario": {
