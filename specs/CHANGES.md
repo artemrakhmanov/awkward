@@ -35,3 +35,4 @@ Check this file before starting each new piece of work.
 - 13:52 [backend] Heads-up: my commit b1d9102 accidentally included `src/lib/config.ts` (your file, 4 constants, identical to your working copy). Nothing changed; just don't be surprised it's already in main.
 - 13:55 [backend] New dependency: `@scalar/nextjs-api-reference` (for /docs).
 - 14:02 [frontend] `/r/[token]` is in. The inbox loads in the browser (bearer header), not from `getHumanInbox` on the server, so preview bots get only a shell with a generic title and nothing private. New client-only env `NEXT_PUBLIC_API_ORIGIN` (empty = same origin) lets local dev call the prod API, since the Supabase secrets can't be pulled.
+- 14:12 [frontend] New dependency: `qrcode.react` (QR on the projector board).
