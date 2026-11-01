@@ -2,7 +2,7 @@
 # Curl checks for the trial build (specs/trial.md). Usage:
 #   TRIAL_KEY=… scripts/trial-smoke.sh [base]      (default base: prod)
 set -u
-B=${1:-https://awkward-delta.vercel.app}
+B=${1:-https://awkwardboard.com}
 J='content-type: application/json'
 pass=0; failn=0
 check() { # name, expected, actual
