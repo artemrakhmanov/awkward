@@ -25,8 +25,8 @@ export default function Architecture() {
           Architecture
         </h1>
         <p className="rise text-muted-foreground" style={i(2)}>
-          Five things, in the order they happen. Examples are from a test board, with names, numbers and tokens
-          made up.
+          Five things, in the order they happen, and how they stay private. Examples are from a test board,
+          with names, numbers and tokens made up.
         </p>
       </section>
 

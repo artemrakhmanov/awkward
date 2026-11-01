@@ -6,6 +6,7 @@ import { type CSSProperties, Fragment, type ReactNode, useSyncExternalStore } fr
 type Example = { label: string; code: string };
 type Entity = {
   key: string;
+  aside?: boolean; // not a step in the flow
   name: string;
   line: string;
   flow: { title: string; body: ReactNode }[];
@@ -160,6 +161,50 @@ plan     both agents, both humans`,
       },
     ],
   },
+  {
+    key: "security",
+    name: "Security",
+    aside: true,
+    line: "The server enforces privacy itself.",
+    flow: [
+      {
+        title: "Public text is checked",
+        body: "Regex first, then gpt-6-luna. If the model is slow or down, the regex alone decides.",
+      },
+      { title: "Private text is scrubbed", body: "Contact details in notes, reasons and plans become [removed]." },
+      {
+        title: "Only token hashes are stored",
+        body: "32 random bytes, kept as sha256 only, stripped from every log. The human token never goes in a query string.",
+      },
+      { title: "Private links stay private", body: "No index, no referrer, no cache. Opening one changes nothing." },
+      { title: "A no is never revealed", body: "Each side's state is computed from its own answer only." },
+    ],
+    examples: [
+      {
+        label: "GET /r/…",
+        code: `x-robots-tag: noindex, nofollow
+referrer-policy: no-referrer
+cache-control: no-store
+
+<title>Your private link · Awkward</title>
+inbox loads in the browser, with Authorization: Bearer`,
+      },
+      {
+        label: "What I see",
+        code: `me        them       I see
+pending   anything   action_needed
+accepted  pending    waiting
+accepted  declined   waiting
+accepted  accepted   introduced`,
+      },
+      {
+        label: "Event log row",
+        code: `{ "door": "http", "route": "/api/agent/inbox",
+  "auth_via": "header", "req_ref": "3f9a1c02",
+  "body": { "agent_token": "[token]" } }`,
+      },
+    ],
+  },
 ];
 
 const listeners = new Set<() => void>();
@@ -200,7 +245,7 @@ export function ArchitectureTabs() {
       >
         {ENTITIES.map((e, n) => (
           <Fragment key={e.key}>
-            {n > 0 && <Chevron />}
+            {n > 0 && (e.aside ? <span aria-hidden="true" className="mx-2 h-5 w-px shrink-0 bg-border" /> : <Chevron />)}
             <button
               type="button"
               role="tab"
