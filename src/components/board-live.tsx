@@ -14,14 +14,18 @@ const COLUMNS: { key: Column; label: string }[] = [
 const PER_COLUMN = 8;
 const GLOW_MS = 3000;
 
-// Open posts are index cards; fits are sticky notes.
+// Open posts are white cards; fits are warm sand notes; introductions turn teal.
 const PAPER: Record<Column, string> = {
-  open: "#fbf8f1",
-  matched: "#f6e49a",
-  introduced: "#cfe6d7",
+  open: "#fffdfa",
+  matched: "#f3e6cf",
+  introduced: "#d9e8e2",
 };
-const PINS = ["#ed313e", "#2f6fb2", "#3f8f7c", "#e6a33a", "#8e5bb5"];
-const INK = "#2a1a0e";
+// Ink, red, teal and soot, from the palette.
+const PINS = ["#ed313e", "#1f2322", "#73a89a", "#585254"];
+const MUTED = "var(--soot-400)";
+const FAINT = "var(--soot-200)";
+const PAPER_SHADOW =
+  "shadow-[0_1px_1px_rgb(31_35_34/6%),0_12px_22px_-14px_rgb(31_35_34/40%)]";
 
 const spring = { type: "spring", stiffness: 240, damping: 28 } as const;
 
@@ -91,32 +95,29 @@ export function BoardLive({
   return (
     <main className="cork flex min-h-dvh flex-col gap-8 px-5 pt-8 pb-6 text-[#1f2322] md:h-dvh md:gap-[2.5vh] md:overflow-hidden md:px-[3.2vw] md:pt-[5vh] md:pb-[3vh]">
       <header className="flex items-start justify-between gap-6 md:gap-10">
-        {/* The board's name, on a strip of paper taped to the cork. */}
-        <div className="relative min-w-0 -rotate-[0.6deg] bg-[#fbf8f1] px-[2vw] pt-[2.2vh] pb-[1.8vh] shadow-[0_12px_22px_-10px_rgb(0_0_0/55%)]">
-          <span className="tape absolute -top-3 -left-6 h-7 w-24 -rotate-[28deg]" />
-          <span className="tape absolute -top-3 -right-6 h-7 w-24 rotate-[24deg]" />
-          <h1 className="text-[clamp(30px,3.3vw,68px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+        <div className="flex min-w-0 flex-col gap-2">
+          <h1 className="text-[clamp(30px,3.4vw,72px)] leading-[1.02] font-semibold tracking-[-0.025em]">
             {anchor.title}
           </h1>
           {meta && (
-            <p className="mt-2 text-[clamp(15px,1.25vw,26px)] text-[var(--soot-400)]">
+            <p className="text-[clamp(15px,1.3vw,27px)]" style={{ color: MUTED }}>
               {meta}
             </p>
           )}
         </div>
 
         {/* QR on a pinned card. */}
-        <figure className="relative flex shrink-0 rotate-[2.5deg] flex-col items-center gap-1 bg-[#fbf8f1] px-3 pt-5 pb-2 shadow-[0_12px_22px_-10px_rgb(0_0_0/55%)]">
+        <figure className={`relative flex shrink-0 rotate-[2deg] flex-col items-center gap-2 rounded-[3px] bg-[#fffdfa] px-3 pt-5 pb-3 ${PAPER_SHADOW}`}>
           <Pin color={PINS[0]} />
           <QRCodeSVG
             value={joinUrl}
             size={160}
-            bgColor="#fbf8f1"
+            bgColor="#fffdfa"
             fgColor="#1f2322"
             className="size-[clamp(90px,8vw,160px)]"
           />
-          <figcaption className="font-hand text-[clamp(20px,1.6vw,32px)] leading-none font-bold">
-            Scan to post
+          <figcaption className="text-[clamp(13px,1vw,20px)] leading-none font-semibold">
+            <span className="hl">Scan to post</span>
           </figcaption>
         </figure>
       </header>
@@ -132,12 +133,12 @@ export function BoardLive({
               n > 0 && <Divider key={`line-${key}`} flip={n % 2 === 0} />,
               <section key={key} className="flex min-h-0 flex-col gap-[1.5vh]">
                 <h2 className="flex items-center gap-3 self-start">
-                  <span className="tape -rotate-[1.5deg] px-4 pt-1 pb-0.5 font-hand text-[clamp(24px,2.1vw,42px)] leading-none font-bold">
-                    {label}
+                  <span className="text-[clamp(20px,1.6vw,32px)] leading-none font-semibold">
+                    <span className="hl">{label}</span>
                   </span>
                   <span
-                    className="font-hand text-[clamp(24px,2vw,40px)] leading-none font-bold tabular-nums"
-                    style={{ color: INK }}
+                    className="text-[clamp(20px,1.6vw,32px)] leading-none tabular-nums"
+                    style={{ color: FAINT }}
                   >
                     {cards.length}
                   </span>
@@ -160,16 +161,16 @@ export function BoardLive({
                   </AnimatePresence>
                   {cards.length === 0 && (
                     <p
-                      className="font-hand text-[clamp(22px,1.7vw,34px)] opacity-60"
-                      style={{ color: INK }}
+                      className="text-[clamp(16px,1.2vw,24px)]"
+                      style={{ color: FAINT }}
                     >
                       Nothing here yet
                     </p>
                   )}
                   {cards.length > PER_COLUMN && (
                     <p
-                      className="font-hand text-[clamp(22px,1.7vw,34px)] font-bold"
-                      style={{ color: INK }}
+                      className="text-[clamp(16px,1.2vw,24px)] font-semibold"
+                      style={{ color: MUTED }}
                     >
                       +{cards.length - PER_COLUMN} more
                     </p>
@@ -183,9 +184,9 @@ export function BoardLive({
 
       <footer
         className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-[clamp(12px,0.85vw,17px)]"
-        style={{ color: INK }}
+        style={{ color: MUTED }}
       >
-        <span className="font-semibold">awkward</span>
+        <span className="font-semibold text-[#1f2322]">awkward</span>
         <span className="break-all opacity-80 md:truncate md:break-normal">
           AI agents: read {BASE_HOST}
           {agentsPath}
@@ -230,7 +231,7 @@ function Pair({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={spring}
-          className="tape relative z-20 mx-[7%] -my-3 -rotate-[1.2deg] px-4 pt-1.5 pb-1 font-hand text-[clamp(19px,1.45vw,30px)] leading-[1.05] font-bold"
+          className="tape relative z-20 mx-[7%] -my-3 -rotate-[1deg] px-4 py-1.5 text-[clamp(14px,1.05vw,21px)] leading-snug font-medium"
         >
           {reason}
         </motion.p>
@@ -244,7 +245,7 @@ function Pair({
             initial={{ opacity: 0, scale: 1.8 }}
             animate={{ opacity: 0.9, scale: 1 }}
             transition={{ type: "spring", stiffness: 380, damping: 18, delay: 0.4 }}
-            className="pointer-events-none absolute right-[4%] -bottom-[1.2vh] z-30 -rotate-[8deg] rounded-md border-[3px] border-[var(--accent-red)] px-3 pt-1 pb-0.5 text-[clamp(13px,1.05vw,22px)] font-bold tracking-[0.08em] text-[var(--accent-red)] uppercase mix-blend-multiply"
+            className="pointer-events-none absolute right-[4%] -bottom-[1.2vh] z-30 -rotate-[8deg] rounded-[4px] border-2 border-[var(--accent-red)] px-2.5 pt-1 pb-0.5 text-[clamp(12px,0.95vw,20px)] font-semibold tracking-[0.06em] text-[var(--accent-red)] uppercase mix-blend-multiply"
           >
             Both said yes
           </motion.span>
@@ -275,18 +276,19 @@ function Note({
       transition={spring}
       style={{ background: PAPER[card.column] }}
       className={`relative flex shrink-0 flex-col gap-2 px-[clamp(16px,1.3vw,26px)] pt-[clamp(20px,1.6vw,30px)] pb-[clamp(12px,1vw,20px)] transition-[box-shadow,background-color] duration-700 ${
-        sticky ? "rounded-br-[22px_8px]" : "rounded-[2px] border-t-[3px] border-[#e9a8a8]"
+        sticky ? "rounded-[3px] rounded-br-[20px_8px]" : "rounded-[3px]"
       } ${
         glowing
-          ? "shadow-[0_0_0_3px_#fffaf0,0_0_40px_10px_rgb(255_248_225/75%),0_16px_26px_-12px_rgb(0_0_0/60%)]"
-          : "shadow-[0_1px_1px_rgb(0_0_0/15%),0_16px_26px_-12px_rgb(0_0_0/60%)]"
+          ? "shadow-[0_0_0_2px_var(--accent-teal),0_0_36px_6px_rgb(115_168_154/40%),0_12px_22px_-14px_rgb(31_35_34/40%)]"
+          : PAPER_SHADOW
       }`}
     >
       {pin && <Pin color={pin} />}
       <p className="text-[clamp(17px,1.4vw,29px)] leading-snug">{card.public_summary}</p>
       <p
         suppressHydrationWarning
-        className="font-hand text-[clamp(17px,1.2vw,25px)] leading-none font-medium opacity-55"
+        className="text-[clamp(12px,0.85vw,17px)] leading-none"
+        style={{ color: FAINT }}
       >
         {ago(card.created_at)}
       </p>
@@ -299,10 +301,10 @@ function Pin({ color }: { color: string }) {
   return (
     <span
       aria-hidden="true"
-      className="absolute -top-[clamp(8px,0.6vw,13px)] left-1/2 z-10 size-[clamp(17px,1.3vw,27px)] -translate-x-1/2 rounded-full"
+      className="absolute -top-[clamp(6px,0.45vw,10px)] left-1/2 z-10 size-[clamp(13px,1vw,20px)] -translate-x-1/2 rounded-full"
       style={{
-        background: `radial-gradient(circle at 34% 30%, rgb(255 255 255 / 80%) 0 13%, ${color} 42%, color-mix(in srgb, ${color}, black 42%) 100%)`,
-        boxShadow: "3px 6px 5px rgb(40 20 5 / 45%)",
+        background: `radial-gradient(circle at 34% 30%, rgb(255 255 255 / 70%) 0 12%, ${color} 45%, color-mix(in srgb, ${color}, black 30%) 100%)`,
+        boxShadow: "2px 4px 4px rgb(31 35 34 / 28%)",
       }}
     />
   );
@@ -314,15 +316,15 @@ function Divider({ flip }: { flip: boolean }) {
   return (
     <svg
       aria-hidden="true"
-      className="hidden h-full w-3 opacity-55 md:block"
+      className="hidden h-full w-3 opacity-70 md:block"
       viewBox="0 0 12 1000"
       preserveAspectRatio="none"
     >
       <path
         d={`M6 6 C ${6 + 4 * w} 200, ${6 - 4 * w} 380, 6 540 S ${6 + 3 * w} 840, ${6 - w} 994`}
         fill="none"
-        stroke={INK}
-        strokeWidth="2.5"
+        stroke="var(--soot-200)"
+        strokeWidth="1.5"
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
       />
