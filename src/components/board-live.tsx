@@ -14,9 +14,9 @@ const COLUMNS: { key: Column; label: string }[] = [
 const PER_COLUMN = 8;
 const GLOW_MS = 3000;
 
-// Open posts are white cards; fits are warm sand notes; introductions turn teal.
+// Open posts are sand cards; fits are warmer notes; introductions turn teal.
 const PAPER: Record<Column, string> = {
-  open: "#fffdfa",
+  open: "#f4efec",
   matched: "#f3e6cf",
   introduced: "#d9e8e2",
 };
@@ -107,12 +107,12 @@ export function BoardLive({
         </div>
 
         {/* QR on a pinned card. */}
-        <figure className={`relative flex shrink-0 rotate-[2deg] flex-col items-center gap-2 rounded-[3px] bg-[#fffdfa] px-3 pt-5 pb-3 ${PAPER_SHADOW}`}>
+        <figure className={`relative flex shrink-0 rotate-[2deg] flex-col items-center gap-2 rounded-[3px] bg-[#f4efec] px-3 pt-5 pb-3 ${PAPER_SHADOW}`}>
           <Pin color={PINS[0]} />
           <QRCodeSVG
             value={joinUrl}
             size={160}
-            bgColor="#fffdfa"
+            bgColor="#f4efec"
             fgColor="#1f2322"
             className="size-[clamp(90px,8vw,160px)]"
           />
