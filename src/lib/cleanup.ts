@@ -1,11 +1,10 @@
 import "server-only";
 import { ApiError } from "@/lib/http";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { normaliseUrl } from "@/lib/url";
+import { normaliseUrl, TEST_PREFIX } from "@/lib/url";
 
-// Test runs (smoke, e2e) post on boards under this host and delete them afterwards.
+// Test runs (smoke, e2e) post on boards under TEST_PREFIX and delete them afterwards.
 // Nothing outside it can be deleted, so a real board is never at risk.
-export const TEST_PREFIX = "https://test.awkwardboard.com/";
 
 export type CleanupResult = { boards: number; requests: number; log_rows: number };
 

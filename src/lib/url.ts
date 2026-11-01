@@ -1,5 +1,8 @@
 import "server-only";
 
+// Boards under this prefix are test boards: slugs get a test- prefix and POST /api/trial/cleanup can delete them.
+export const TEST_PREFIX = "https://test.awkwardboard.com/";
+
 export const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 
 // Domains agents mix up. Keep it tiny.

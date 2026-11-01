@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/http";
 import type { createAnchorInput } from "@/lib/schemas";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { AnchorCreated, AnchorHit, AnchorSearch, AnchorSummary } from "@/lib/types";
-import { looksLikeUrl, normaliseUrl, slugify } from "@/lib/url";
+import { looksLikeUrl, normaliseUrl, slugify, TEST_PREFIX } from "@/lib/url";
 
 export const ANCHOR_COLUMNS = "id, slug, title, description, url, starts_at, place" as const;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -103,7 +103,8 @@ export async function createAnchor(input: z.infer<typeof createAnchorInput>): Pr
 
   const starts_at = parseDate(input.starts_at);
   const embedding = await embedText([input.title, input.description, input.place, starts_at?.slice(0, 10)].filter(Boolean).join(" · "));
-  const base = slugify(input.title);
+  // Test boards (smoke, e2e) never take a real board's slug.
+  const base = (url?.startsWith(TEST_PREFIX) ? "test-" : "") + slugify(input.title);
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const slug = attempt === 0 ? base : `${base.slice(0, 35)}-${randomBytes(2).toString("hex")}`;
