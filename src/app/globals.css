@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -49,24 +49,31 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --sand-100: #f4efec;
+  --sand-400: #e1d5cd;
+  --sand-500: #d3c3b8;
+  --soot-200: #969394;
+  --soot-400: #585254;
+  --accent-red: #ed313e;
+  --accent-teal: #73a89a;
+  --background: #ffffff;
+  --foreground: #1f2322;
+  --card: #ffffff;
+  --card-foreground: #1f2322;
+  --popover: #ffffff;
+  --popover-foreground: #1f2322;
+  --primary: #1f2322;
+  --primary-foreground: #fdfcfb;
+  --secondary: #f4efec;
+  --secondary-foreground: #1f2322;
+  --muted: #f4efec;
+  --muted-foreground: #585254;
+  --accent: #f4efec;
+  --accent-foreground: #1f2322;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #e1d5cd;
+  --input: #e1d5cd;
+  --ring: #969394;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -84,24 +91,24 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #161918;
+  --foreground: #f4efec;
+  --card: #1f2322;
+  --card-foreground: #f4efec;
+  --popover: #1f2322;
+  --popover-foreground: #f4efec;
+  --primary: #f4efec;
+  --primary-foreground: #1f2322;
+  --secondary: #2a2f2d;
+  --secondary-foreground: #f4efec;
+  --muted: #2a2f2d;
+  --muted-foreground: #969394;
+  --accent: #2a2f2d;
+  --accent-foreground: #f4efec;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: rgb(244 239 236 / 12%);
+  --input: rgb(244 239 236 / 16%);
+  --ring: #969394;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -126,5 +133,84 @@
   }
   html {
     @apply font-sans;
+  }
+}
+/* Lines fade up one after another: set --i on each. */
+.rise {
+  animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i, 0) * 90ms) both;
+}
+
+/* Hand-drawn highlighter behind a link label. */
+.hl {
+  position: relative;
+  isolation: isolate;
+}
+.hl::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: auto -0.06em 0.1em;
+  height: 0.45em;
+  background-color: var(--sand-400);
+  mask: url(/brush.svg) center / 100% 100% no-repeat;
+  animation: brush 0.7s cubic-bezier(0.33, 1, 0.68, 1) calc(var(--i, 0) * 90ms + 0.25s) both;
+  transition: background-color 0.15s;
+}
+a:hover .hl::before,
+a:focus-visible .hl::before {
+  background-color: var(--sand-500);
+}
+
+::selection {
+  background: var(--sand-100);
+  color: var(--foreground);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+@keyframes brush {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: rise-fade 0.3s both;
+  }
+  .hl::before {
+    animation: none;
+  }
+}
+@keyframes rise-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Hand-drawn doodles: each ink path (pathLength=1) draws itself in. */
+.draw path:not(.blob) {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.9s cubic-bezier(0.33, 1, 0.68, 1) calc(var(--i, 0) * 90ms + 0.3s) forwards;
+}
+.draw .blob {
+  animation: rise-fade 0.5s calc(var(--i, 0) * 90ms) both;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .draw path:not(.blob) {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }
