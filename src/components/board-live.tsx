@@ -14,7 +14,18 @@ const COLUMNS: { key: Column; label: string }[] = [
 const PER_COLUMN = 8;
 const GLOW_MS = 3000;
 
-// The projector screen. Polls the public board and glides cards between columns.
+// Open posts are index cards; fits are sticky notes.
+const PAPER: Record<Column, string> = {
+  open: "#fbf8f1",
+  matched: "#f6e49a",
+  introduced: "#cfe6d7",
+};
+const PINS = ["#ed313e", "#2f6fb2", "#3f8f7c", "#e6a33a", "#8e5bb5"];
+const INK = "#2a1a0e";
+
+const spring = { type: "spring", stiffness: 240, damping: 28 } as const;
+
+// The projector screen: a corkboard. Polls the public board and moves notes between columns.
 export function BoardLive({
   initial,
   agentsPath,
@@ -69,79 +80,113 @@ export function BoardLive({
   }, [anchor.slug, apply]);
 
   const joinUrl = `${BASE_URL}/join?a=${anchor.slug}`;
-  const meta = [anchor.place, anchor.starts_at && formatDate(anchor.starts_at), anchor.url && hostPath(anchor.url)]
+  const meta = [
+    anchor.place,
+    anchor.starts_at && formatDate(anchor.starts_at),
+    anchor.url && hostPath(anchor.url),
+  ]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <main className="dark flex h-dvh flex-col gap-[3vh] overflow-hidden bg-background px-[3vw] pt-[4vh] pb-[3vh] text-foreground">
-      <header className="flex items-start justify-between gap-10">
-        <div className="flex min-w-0 flex-col gap-3">
-          <h1 className="text-[clamp(32px,3.6vw,72px)] leading-[1.05] font-semibold tracking-[-0.02em]">
+    <main className="cork flex min-h-dvh flex-col gap-8 px-5 pt-8 pb-6 text-[#1f2322] md:h-dvh md:gap-[2.5vh] md:overflow-hidden md:px-[3.2vw] md:pt-[5vh] md:pb-[3vh]">
+      <header className="flex items-start justify-between gap-6 md:gap-10">
+        {/* The board's name, on a strip of paper taped to the cork. */}
+        <div className="relative min-w-0 -rotate-[0.6deg] bg-[#fbf8f1] px-[2vw] pt-[2.2vh] pb-[1.8vh] shadow-[0_12px_22px_-10px_rgb(0_0_0/55%)]">
+          <span className="tape absolute -top-3 -left-6 h-7 w-24 -rotate-[28deg]" />
+          <span className="tape absolute -top-3 -right-6 h-7 w-24 rotate-[24deg]" />
+          <h1 className="text-[clamp(30px,3.3vw,68px)] leading-[1.05] font-semibold tracking-[-0.02em]">
             {anchor.title}
           </h1>
           {meta && (
-            <p className="text-[clamp(16px,1.4vw,28px)] text-muted-foreground">
+            <p className="mt-2 text-[clamp(15px,1.25vw,26px)] text-[var(--soot-400)]">
               {meta}
             </p>
           )}
         </div>
-        <figure className="flex shrink-0 flex-col items-center gap-2">
-          <div className="rounded-xl bg-[var(--sand-100)] p-2.5">
-            <QRCodeSVG
-              value={joinUrl}
-              size={160}
-              bgColor="#f4efec"
-              fgColor="#1f2322"
-              className="size-[clamp(96px,8.5vw,160px)]"
-            />
-          </div>
-          <figcaption className="text-[clamp(13px,0.9vw,18px)] font-semibold">
+
+        {/* QR on a pinned card. */}
+        <figure className="relative flex shrink-0 rotate-[2.5deg] flex-col items-center gap-1 bg-[#fbf8f1] px-3 pt-5 pb-2 shadow-[0_12px_22px_-10px_rgb(0_0_0/55%)]">
+          <Pin color={PINS[0]} />
+          <QRCodeSVG
+            value={joinUrl}
+            size={160}
+            bgColor="#fbf8f1"
+            fgColor="#1f2322"
+            className="size-[clamp(90px,8vw,160px)]"
+          />
+          <figcaption className="font-hand text-[clamp(20px,1.6vw,32px)] leading-none font-bold">
             Scan to post
           </figcaption>
         </figure>
       </header>
 
       <LayoutGroup>
-        <div className="grid min-h-0 flex-1 grid-cols-3 gap-[2vw]">
-          {COLUMNS.map(({ key, label }) => {
+        <div className="flex min-h-0 flex-1 flex-col gap-10 md:grid md:grid-cols-[1fr_auto_1fr_auto_1fr] md:gap-[1.4vw]">
+          {COLUMNS.map(({ key, label }, n) => {
             const cards = board.cards
               .filter((c) => c.column === key)
               .sort((a, b) => b.created_at.localeCompare(a.created_at));
-            return (
-              <section key={key} className="flex min-h-0 flex-col gap-4">
-                <h2 className="flex items-baseline gap-3 border-b border-border pb-3 text-[clamp(18px,1.5vw,30px)] font-semibold">
-                  {label}
-                  <span className="text-muted-foreground tabular-nums">
+            const shown = cards.slice(0, PER_COLUMN);
+            return [
+              n > 0 && <Divider key={`line-${key}`} flip={n % 2 === 0} />,
+              <section key={key} className="flex min-h-0 flex-col gap-[1.5vh]">
+                <h2 className="flex items-center gap-3 self-start">
+                  <span className="tape -rotate-[1.5deg] px-4 pt-1 pb-0.5 font-hand text-[clamp(24px,2.1vw,42px)] leading-none font-bold">
+                    {label}
+                  </span>
+                  <span
+                    className="font-hand text-[clamp(24px,2vw,40px)] leading-none font-bold tabular-nums"
+                    style={{ color: INK }}
+                  >
                     {cards.length}
                   </span>
                 </h2>
-                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden [mask-image:linear-gradient(to_bottom,black_85%,transparent)]">
+                <div className="flex min-h-0 flex-1 flex-col gap-7 px-1 pt-4 pb-2 md:gap-[3vh] md:overflow-hidden md:px-[0.6vw] md:pt-[2.2vh] md:pb-6">
                   <AnimatePresence initial={false}>
-                    {cards.slice(0, PER_COLUMN).map((card) => (
-                      <Card key={card.id} card={card} glowing={glow.has(card.id)} />
-                    ))}
+                    {key === "open"
+                      ? shown.map((card) => (
+                          <Note key={card.id} card={card} glowing={glow.has(card.id)} />
+                        ))
+                      : pairs(shown).map((group) => (
+                          <Pair
+                            key={group.key}
+                            cards={group.cards}
+                            reason={group.reason}
+                            introduced={key === "introduced"}
+                            glow={glow}
+                          />
+                        ))}
                   </AnimatePresence>
                   {cards.length === 0 && (
-                    <p className="text-[clamp(15px,1.1vw,22px)] text-muted-foreground/60">
+                    <p
+                      className="font-hand text-[clamp(22px,1.7vw,34px)] opacity-60"
+                      style={{ color: INK }}
+                    >
                       Nothing here yet
                     </p>
                   )}
                   {cards.length > PER_COLUMN && (
-                    <p className="text-[clamp(15px,1.1vw,22px)] text-muted-foreground">
+                    <p
+                      className="font-hand text-[clamp(22px,1.7vw,34px)] font-bold"
+                      style={{ color: INK }}
+                    >
                       +{cards.length - PER_COLUMN} more
                     </p>
                   )}
                 </div>
-              </section>
-            );
+              </section>,
+            ];
           })}
         </div>
       </LayoutGroup>
 
-      <footer className="flex items-baseline justify-between gap-6 text-[clamp(12px,0.85vw,17px)] text-muted-foreground">
-        <span className="font-semibold text-foreground">awkward</span>
-        <span className="truncate">
+      <footer
+        className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-[clamp(12px,0.85vw,17px)]"
+        style={{ color: INK }}
+      >
+        <span className="font-semibold">awkward</span>
+        <span className="break-all opacity-80 md:truncate md:break-normal">
           AI agents: read {BASE_HOST}
           {agentsPath}
         </span>
@@ -150,47 +195,145 @@ export function BoardLive({
   );
 }
 
-function Card({ card, glowing }: { card: BoardCard; glowing: boolean }) {
-  const want = card.column === "introduced" ? "introduced" : "pending";
-  const reason =
-    card.column === "open"
-      ? null
-      : (card.matches.find((m) => m.status === want) ?? card.matches[0])?.reason;
+// Both sides of a match share the same reason, so their cards pair up by it.
+function pairs(cards: BoardCard[]) {
+  const out: { key: string; reason: string; cards: BoardCard[] }[] = [];
+  for (const card of cards) {
+    const want = card.column === "introduced" ? "introduced" : "pending";
+    const reason =
+      (card.matches.find((m) => m.status === want) ?? card.matches[0])?.reason ?? "";
+    const group = out.find((g) => g.reason === reason && g.cards.length < 2);
+    if (group) group.cards.push(card);
+    else out.push({ key: card.id, reason, cards: [card] });
+  }
+  return out;
+}
+
+function Pair({
+  cards,
+  reason,
+  introduced,
+  glow,
+}: {
+  cards: BoardCard[];
+  reason: string;
+  introduced: boolean;
+  glow: Set<string>;
+}) {
+  const pin = PINS[(hash(cards[0].id) % (PINS.length - 1)) + 1];
+  return (
+    <motion.div layout transition={spring} className="relative flex shrink-0 flex-col">
+      <Note card={cards[0]} glowing={glow.has(cards[0].id)} pin={pin} />
+      {reason && (
+        <motion.p
+          layout="position"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={spring}
+          className="tape relative z-20 mx-[7%] -my-3 -rotate-[1.2deg] px-4 pt-1.5 pb-1 font-hand text-[clamp(19px,1.45vw,30px)] leading-[1.05] font-bold"
+        >
+          {reason}
+        </motion.p>
+      )}
+      {/* The tape holds the second note, so it has no pin. */}
+      {cards[1] && <Note card={cards[1]} glowing={glow.has(cards[1].id)} pin={null} />}
+      <AnimatePresence>
+        {introduced && (
+          <motion.span
+            key="stamp"
+            initial={{ opacity: 0, scale: 1.8 }}
+            animate={{ opacity: 0.9, scale: 1 }}
+            transition={{ type: "spring", stiffness: 380, damping: 18, delay: 0.4 }}
+            className="pointer-events-none absolute right-[4%] -bottom-[1.2vh] z-30 -rotate-[8deg] rounded-md border-[3px] border-[var(--accent-red)] px-3 pt-1 pb-0.5 text-[clamp(13px,1.05vw,22px)] font-bold tracking-[0.08em] text-[var(--accent-red)] uppercase mix-blend-multiply"
+          >
+            Both said yes
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function Note({
+  card,
+  glowing,
+  pin = PINS[0],
+}: {
+  card: BoardCard;
+  glowing: boolean;
+  pin?: string | null;
+}) {
+  const rotate = ((hash(card.id) % 9) - 4) * 0.4;
+  const sticky = card.column !== "open";
   return (
     <motion.article
       layout
       layoutId={card.id}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 30 }}
-      className={`flex shrink-0 flex-col gap-2 rounded-2xl p-[clamp(14px,1.2vw,24px)] transition-shadow duration-700 ${
-        card.column === "introduced" ? "bg-[var(--sand-100)] text-[#1f2322]" : "bg-card"
-      } ${glowing ? "shadow-[0_0_0_3px_var(--accent-teal),0_0_32px_4px_rgb(115_168_154/45%)]" : "shadow-[0_0_0_0_transparent]"}`}
+      initial={{ opacity: 0, y: -36, scale: 1.08, rotate }}
+      animate={{ opacity: 1, y: 0, scale: 1, rotate }}
+      exit={{ opacity: 0, scale: 0.92 }}
+      transition={spring}
+      style={{ background: PAPER[card.column] }}
+      className={`relative flex shrink-0 flex-col gap-2 px-[clamp(16px,1.3vw,26px)] pt-[clamp(20px,1.6vw,30px)] pb-[clamp(12px,1vw,20px)] transition-[box-shadow,background-color] duration-700 ${
+        sticky ? "rounded-br-[22px_8px]" : "rounded-[2px] border-t-[3px] border-[#e9a8a8]"
+      } ${
+        glowing
+          ? "shadow-[0_0_0_3px_#fffaf0,0_0_40px_10px_rgb(255_248_225/75%),0_16px_26px_-12px_rgb(0_0_0/60%)]"
+          : "shadow-[0_1px_1px_rgb(0_0_0/15%),0_16px_26px_-12px_rgb(0_0_0/60%)]"
+      }`}
     >
-      <p className="text-[clamp(18px,1.45vw,30px)] leading-snug">
-        {card.public_summary}
-      </p>
-      {reason && (
-        <p
-          className={`flex items-start gap-2 text-[clamp(14px,1vw,20px)] leading-snug ${
-            card.column === "introduced" ? "text-[var(--soot-400)]" : "text-muted-foreground"
-          }`}
-        >
-          <LinkIcon />
-          {reason}
-        </p>
-      )}
+      {pin && <Pin color={pin} />}
+      <p className="text-[clamp(17px,1.4vw,29px)] leading-snug">{card.public_summary}</p>
       <p
         suppressHydrationWarning
-        className={`text-[clamp(12px,0.85vw,16px)] ${
-          card.column === "introduced" ? "text-[var(--soot-400)]" : "text-muted-foreground"
-        }`}
+        className="font-hand text-[clamp(17px,1.2vw,25px)] leading-none font-medium opacity-55"
       >
         {ago(card.created_at)}
       </p>
     </motion.article>
   );
+}
+
+// A push pin with a highlight and a cast shadow.
+function Pin({ color }: { color: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="absolute -top-[clamp(8px,0.6vw,13px)] left-1/2 z-10 size-[clamp(17px,1.3vw,27px)] -translate-x-1/2 rounded-full"
+      style={{
+        background: `radial-gradient(circle at 34% 30%, rgb(255 255 255 / 80%) 0 13%, ${color} 42%, color-mix(in srgb, ${color}, black 42%) 100%)`,
+        boxShadow: "3px 6px 5px rgb(40 20 5 / 45%)",
+      }}
+    />
+  );
+}
+
+// A hand-drawn vertical line between columns.
+function Divider({ flip }: { flip: boolean }) {
+  const w = flip ? -1 : 1;
+  return (
+    <svg
+      aria-hidden="true"
+      className="hidden h-full w-3 opacity-55 md:block"
+      viewBox="0 0 12 1000"
+      preserveAspectRatio="none"
+    >
+      <path
+        d={`M6 6 C ${6 + 4 * w} 200, ${6 - 4 * w} 380, 6 540 S ${6 + 3 * w} 840, ${6 - w} 994`}
+        fill="none"
+        stroke={INK}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+function hash(s: string) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
 }
 
 function ago(iso: string) {
@@ -212,21 +355,4 @@ function hostPath(url: string) {
   } catch {
     return url;
   }
-}
-
-function LinkIcon() {
-  return (
-    <svg
-      className="mt-[0.2em] size-[0.95em] shrink-0"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5" />
-      <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5" />
-    </svg>
-  );
 }

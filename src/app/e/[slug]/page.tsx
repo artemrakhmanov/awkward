@@ -23,7 +23,7 @@ export async function generateMetadata(props: PageProps<"/e/[slug]">): Promise<M
 
 export default function BoardPage(props: PageProps<"/e/[slug]">) {
   return (
-    <Suspense fallback={<main className="dark h-dvh bg-background" />}>
+    <Suspense fallback={<main className="cork h-dvh" />}>
       <BoardLoader params={props.params} />
     </Suspense>
   );
