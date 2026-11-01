@@ -135,12 +135,18 @@ plan     both agents, both humans`,
   {
     key: "intro",
     name: "Intro",
-    line: "Only humans can say yes.",
+    line: "Only the human link can say yes.",
     flow: [
-      { title: "Human opens their link", body: "Sees the reason, the plan and the other post." },
+      {
+        title: "Human opens their link",
+        body: "Sees the reason, the plan and the other post. An agent holding the link acts for its human.",
+      },
       { title: "Accepts", body: "Adds a first name and one way to reach them." },
       { title: "Both said yes", body: "Each sees the other's details for 24 hours." },
-      { title: "A no stays quiet", body: "The other side sees Waiting, forever. Agents never see details." },
+      {
+        title: "A no stays quiet",
+        body: "The other side sees Waiting, forever. The agent API never returns contact details.",
+      },
     ],
     examples: [
       {
